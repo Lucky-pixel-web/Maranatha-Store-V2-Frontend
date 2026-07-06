@@ -12,9 +12,25 @@ import { ApiError, Cliente, DetalleVenta, Producto, TipoComprobante, Venta } fro
   template: `
     <div class="page-title no-print">
       <div><h2>Venta y facturación</h2><p>Boleta, factura o nota de pedido con control automático de stock</p></div>
-      <button class="secondary" (click)="nuevoComprobante()">Nueva venta</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="secondary" (click)="nuevoComprobante()">Nueva venta</button>
+        <button *ngIf="preferenciaImpresion" class="secondary" (click)="limpiarPreferenciaImpresion()">Cambiar formato impresión</button>
+      </div>
     </div>
     <div *ngIf="mensaje" class="notice no-print" [class.error-notice]="esError">{{ mensaje }}</div>
+
+    <div class="modal" *ngIf="mostrarDialogoImpresion">
+      <div class="dialog">
+        <h3>¿Qué formato desea imprimir?</h3>
+        <p>Elija <b>Ticket</b> para recibos pequeños o <b>A4</b> para hoja completa.</p>
+        <div class="actions">
+          <label style="margin-right:auto"><input type="checkbox" [(ngModel)]="usarSiempreImpresion"> Usar siempre este formato</label>
+          <button class="secondary" (click)="seleccionarFormato('TICKET')">Ticket</button>
+          <button class="primary-wide" (click)="seleccionarFormato('A4')">A4</button>
+          <button class="secondary" (click)="mostrarDialogoImpresion=false">Cancelar</button>
+        </div>
+      </div>
+    </div>
 
     <div class="sale-grid">
       <section class="panel no-print">
@@ -32,6 +48,9 @@ import { ApiError, Cliente, DetalleVenta, Producto, TipoComprobante, Venta } fro
               <option [ngValue]="undefined">Público general</option>
               <option *ngFor="let c of clientes" [ngValue]="c.id">{{ c.nombre }} {{ c.apellido }} · {{ c.numeroDocumento || 'sin documento' }}</option>
             </select>
+          </label>
+          <label style="align-self:center">
+            <input type="checkbox" [(ngModel)]="preciosIncluyenIgv"> Precios incluyen IGV ({{ (igvRate*100) | number:'1.0-0' }}%)
           </label>
         </div>
         <div *ngIf="tipo==='BOLETA' || tipo==='FACTURA'" class="row">
@@ -81,28 +100,84 @@ import { ApiError, Cliente, DetalleVenta, Producto, TipoComprobante, Venta } fro
       </section>
 
       <section class="panel receipt" id="comprobante">
-        <div class="receipt-head">
-          <h2>MARANATHA STORE</h2>
-          <p>Librería escolar</p>
-          <small>RUC: 20XXXXXXXXX · Tacna, Perú</small>
+        <div class="comprobante-a4">
+          <div class="receipt-head receipt-head-grid">
+            <div class="company">
+              <h2>MARANATHA STORE</h2>
+              <div class="company-sub">Librería escolar</div>
+              <div class="company-small">Tacna, Perú</div>
+              <div class="ruc-line"><span class="ruc-label">RUC</span> <span class="ruc-number">20XXXXXXXXX</span></div>
+            </div>
+            <div class="comprobante-block">
+              <div class="comprobante-type">{{ comprobanteTipo }}</div>
+              <div class="serie-number"><span *ngIf="ventaEmitida">{{ ventaEmitida.serie }}-{{ ventaEmitida.numero }}</span><span *ngIf="!ventaEmitida">(BORRADOR)</span></div>
+            </div>
+            <div class="qr-block" *ngIf="ventaEmitida">
+              <img [src]="qrDataUrl(ventaEmitida)" alt="QR" class="qr-img" crossOrigin="anonymous">
+            </div>
+          </div>
+
+          <hr>
+          <p>
+            Fecha: {{ comprobanteFecha | date:'dd/MM/yyyy HH:mm' }}<br>
+            Estado: {{ ventaEmitida?.estado || 'BORRADOR' }}
+          </p>
+          <p>Cliente: {{ comprobanteCliente }}<br><small *ngIf="comprobanteDocumento">{{ comprobanteDocumento }}</small></p>
+
+          <table class="items">
+            <thead><tr><th>Cant.</th><th>U.M.</th><th>Descripción</th><th class="right">Precio</th><th class="right">Importe</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let d of comprobanteDetalles">
+                <td>{{ d.cantidad }}</td>
+                <td>UND</td>
+                <td>{{ d.productoNombre }}</td>
+                <td class="right">S/ {{ d.precioUnitario | number:'1.2-2' }}</td>
+                <td class="right">S/ {{ d.subtotal | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <hr>
+          <table class="tax-summary">
+            <tr><td class="label">Op. Gravada</td><td class="value">S/ {{ comprobanteBase | number:'1.2-2' }}</td></tr>
+            <tr><td class="label">IGV ({{ (igvRate*100) | number:'1.0-0' }}%)</td><td class="value">S/ {{ comprobanteIgv | number:'1.2-2' }}</td></tr>
+            <tr class="total"><td class="label"><strong>TOTAL</strong></td><td class="value"><strong>S/ {{ comprobanteTotalConIgv | number:'1.2-2' }}</strong></td></tr>
+          </table>
+
+          <small>Gracias por su compra</small>
+          <div class="receipt-legend">
+            <small>Representación impresa del comprobante. Este sistema no está asociado a SUNAT; el documento mostrado no constituye comprobante fiscal validado por SUNAT.</small>
+          </div>
         </div>
-        <hr>
-        <p>
-          <b>{{ comprobanteTipo }}</b><br>
-          <span *ngIf="ventaEmitida">N.° {{ ventaEmitida.serie }}-{{ ventaEmitida.numero }}<br></span>
-          Fecha: {{ comprobanteFecha | date:'dd/MM/yyyy HH:mm' }}<br>
-          Estado: {{ ventaEmitida?.estado || 'BORRADOR' }}
-        </p>
-        <p>Cliente: {{ comprobanteCliente }}<br><small *ngIf="comprobanteDocumento">{{ comprobanteDocumento }}</small></p>
-        <table>
-          <tr *ngFor="let d of comprobanteDetalles">
-            <td>{{ d.cantidad }} x {{ d.productoNombre }}</td>
-            <td>S/ {{ d.subtotal | number:'1.2-2' }}</td>
-          </tr>
-        </table>
-        <hr>
-        <div class="total"><span>TOTAL</span><strong>S/ {{ comprobanteTotal | number:'1.2-2' }}</strong></div>
-        <small>Gracias por su compra</small>
+
+        <div class="comprobante-ticket">
+          <div class="ticket-head">
+            <h3>MARANATHA STORE</h3>
+            <div class="company-sub">Librería escolar</div>
+            <div class="ruc-line"><span class="ruc-label">RUC</span> <span class="ruc-number">20XXXXXXXXX</span></div>
+            <div class="ticket-meta">
+              <span class="comprobante-type small">{{ comprobanteTipo }}</span>
+              <span class="serie-number small"><span *ngIf="ventaEmitida">{{ ventaEmitida.serie }}-{{ ventaEmitida.numero }}</span><span *ngIf="!ventaEmitida">(BORRADOR)</span></span>
+            </div>
+          </div>
+          <div class="ticket-body">
+            <div>Fecha: {{ comprobanteFecha | date:'dd/MM/yyyy HH:mm' }}</div>
+            <div>Cliente: {{ comprobanteCliente }}</div>
+            <div class="ticket-items">
+              <div *ngFor="let d of comprobanteDetalles" class="ticket-item">
+                <span>{{ d.cantidad }} x {{ d.productoNombre }}</span>
+                <span class="right">S/ {{ d.subtotal | number:'1.2-2' }}</span>
+              </div>
+            </div>
+            <div class="ticket-totals">
+              <div><span>SUBTOTAL</span><span class="right">S/ {{ comprobanteBase | number:'1.2-2' }}</span></div>
+              <div><span>IGV</span><span class="right">S/ {{ comprobanteIgv | number:'1.2-2' }}</span></div>
+              <div class="total"><span><strong>TOTAL</strong></span><span class="right"><strong>S/ {{ comprobanteTotalConIgv | number:'1.2-2' }}</strong></span></div>
+            </div>
+            <div class="ticket-qr" *ngIf="ventaEmitida"><img [src]="qrDataUrl(ventaEmitida)" alt="QR"></div>
+            <div class="receipt-legend small">Representación impresa. No validado por SUNAT.</div>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -120,6 +195,7 @@ import { ApiError, Cliente, DetalleVenta, Producto, TipoComprobante, Venta } fro
               <td><span class="status" [class.danger]="v.estado==='ANULADA'">{{ v.estado }}</span></td>
               <td>
                 <button class="link" (click)="reimprimir(v)">Imprimir</button>
+                <button class="link" (click)="descargarPdf(v)">PDF</button>
                 <button *ngIf="v.estado==='EMITIDA'" class="link danger-text" (click)="anular(v)">Anular</button>
               </td>
             </tr>
@@ -150,6 +226,11 @@ export class VentasComponent implements OnInit {
   procesando = false;
   mensaje = '';
   esError = false;
+  mostrarDialogoImpresion = false;
+  preferenciaImpresion?: 'TICKET' | 'A4';
+  usarSiempreImpresion = false;
+  igvRate = 0.18; // 18% IGV
+  preciosIncluyenIgv = true;
 
   get totalBorrador(): number {
     return this.detalles.reduce((suma, detalle) => suma + (detalle.subtotal || 0), 0);
@@ -200,9 +281,24 @@ export class VentasComponent implements OnInit {
     return this.textoTipo(this.ventaEmitida?.tipoComprobante || this.tipo);
   }
 
+  get comprobanteBase(): number {
+    const total = this.ventaEmitida?.total ?? this.totalBorrador;
+    return this.preciosIncluyenIgv ? total / (1 + this.igvRate) : total;
+  }
+
+  get comprobanteIgv(): number {
+    return this.comprobanteBase * this.igvRate;
+  }
+
+  get comprobanteTotalConIgv(): number {
+    return this.comprobanteBase + this.comprobanteIgv;
+  }
+
   ngOnInit(): void {
     this.cargarCatalogos();
     this.cargarVentas();
+    const pref = localStorage.getItem('maranatha.imprimir.formato');
+    if (pref === 'TICKET' || pref === 'A4') this.preferenciaImpresion = pref as 'TICKET'|'A4';
   }
 
   onTipoChange(): void {
@@ -361,7 +457,7 @@ export class VentasComponent implements OnInit {
         this.esError = false;
         this.cargarCatalogos();
         this.cargarVentas();
-        setTimeout(() => window.print(), 150);
+        this.abrirDialogoImpresion();
       },
       error: error => {
         this.procesando = false;
@@ -386,7 +482,7 @@ export class VentasComponent implements OnInit {
 
   reimprimir(venta: Venta): void {
     this.ventaEmitida = venta;
-    setTimeout(() => window.print(), 100);
+    this.abrirDialogoImpresion();
   }
 
   nuevoComprobante(): void {
@@ -396,6 +492,100 @@ export class VentasComponent implements OnInit {
     this.clienteId = undefined;
     this.cantidad = 1;
     this.mensaje = '';
+  }
+
+  abrirDialogoImpresion(): void {
+    if (this.preferenciaImpresion) {
+      this.seleccionarFormato(this.preferenciaImpresion);
+      return;
+    }
+    this.mostrarDialogoImpresion = true;
+  }
+
+  seleccionarFormato(formato: 'TICKET' | 'A4'): void {
+    this.mostrarDialogoImpresion = false;
+    const className = formato === 'TICKET' ? 'print-ticket' : 'print-a4';
+    document.body.classList.add(className);
+
+    if (this.usarSiempreImpresion) {
+      localStorage.setItem('maranatha.imprimir.formato', formato);
+      this.preferenciaImpresion = formato;
+    }
+
+    const cleanup = () => {
+      document.body.classList.remove(className);
+      window.removeEventListener('afterprint', cleanup);
+    };
+
+    window.addEventListener('afterprint', cleanup);
+    // Dejar un pequeño retraso para que el DOM aplique clases antes de imprimir
+    setTimeout(() => window.print(), 150);
+  }
+
+  limpiarPreferenciaImpresion(): void {
+    localStorage.removeItem('maranatha.imprimir.formato');
+    this.preferenciaImpresion = undefined;
+    this.mensaje = 'Preferencia de impresión eliminada.';
+    this.esError = false;
+  }
+
+  async descargarPdf(venta: Venta): Promise<void> {
+    this.ventaEmitida = venta;
+    // esperar que la vista se actualice
+    await new Promise(res => setTimeout(res, 120));
+    const el = document.getElementById('comprobante');
+    if (!el) {
+      this.mostrarDialogoImpresion = false;
+      this.mensaje = 'No se encontró el comprobante en el DOM.';
+      this.esError = true;
+      return;
+    }
+
+    try {
+      const modJs = await import('jspdf');
+      const modHtml2 = await import('html2canvas');
+      const jsPDF = (modJs as any).default || (modJs as any).jsPDF || (modJs as any);
+      const html2canvas = (modHtml2 as any).default || (modHtml2 as any);
+      const canvas = await (html2canvas as any)(el as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff'
+      });
+      const imgData = canvas.toDataURL('image/png');
+
+      const formato = this.preferenciaImpresion || 'A4';
+      if (formato === 'TICKET') {
+        const ticketWidth = 58; // mm
+        const pdf = new jsPDF({ unit: 'mm', format: [ticketWidth, 400] });
+        const imgProps = (pdf as any).getImageProperties(imgData);
+        const pdfWidth = ticketWidth; // mm
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`comprobante-${venta.serie}-${venta.numero}.pdf`);
+      } else {
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = (pdf as any).getImageProperties(imgData);
+        const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
+        const imgWidth = imgProps.width * ratio;
+        const imgHeight = imgProps.height * ratio;
+        pdf.addImage(imgData, 'PNG', (pageWidth - imgWidth) / 2, 10, imgWidth, imgHeight);
+        pdf.save(`comprobante-${venta.serie}-${venta.numero}.pdf`);
+      }
+    } catch (err) {
+      console.error('Error generando PDF:', err);
+      // fallback: abrir diálogo de impresión
+      this.mensaje = 'No fue posible generar PDF automáticamente. Se abrirá la vista de impresión.';
+      this.esError = false;
+      this.abrirDialogoImpresion();
+    }
+  }
+
+  qrDataUrl(venta: Venta): string {
+    const payload = `TIPO:${venta.tipoComprobante}|SERIE:${venta.serie}-${venta.numero}|TOTAL:${venta.total}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payload)}`;
   }
 
   textoTipo(tipo: TipoComprobante): string {

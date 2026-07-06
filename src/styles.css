@@ -69,7 +69,79 @@ input,select{width:100%;border:1px solid #cfdbe2;border-radius:8px;padding:10px;
 .receipt{font-family:monospace}
 .receipt-head{text-align:center}
 .receipt table td{padding:7px 0;border:0}
+.receipt-head-grid{display:grid;grid-template-columns:1fr 120px 160px;gap:8px;align-items:center}
+.receipt-head .company h2{margin:0;font-size:18px}
+.receipt-head .company-sub{font-size:13px;color:#556}
+.receipt-head .company-small{font-size:12px;color:#778}
+.ruc-line{margin-top:6px;font-size:13px;color:#333}
+.ruc-line .ruc-label{font-weight:600;margin-right:6px;color:#445}
+.ruc-line .ruc-number{font-weight:700}
+.comprobante-block{text-align:center}
+.comprobante-type{font-weight:800;letter-spacing:0.6px}
+.serie-number{font-size:16px;margin-top:6px}
+.ticket-meta{display:flex;justify-content:flex-start;align-items:center;gap:8px;margin-top:4px;width:100%;}
+.ticket-meta .comprobante-type,.ticket-meta .serie-number{display:inline-block;text-align:left}
+.receipt-legend{margin-top:10px;color:#556;font-size:11px}
+.tax-summary{width:100%;border-collapse:collapse;margin-top:8px}
+.tax-summary tr{display:table-row}
+.tax-summary td{padding:6px 8px;border-top:1px solid #eef2f6}
+.tax-summary td.label{width:65%;padding-right:12px;text-align:right}
+.tax-summary td.value{width:35%;text-align:right;min-width:110px}
+.tax-summary tr.total td{font-size:16px;font-weight:700}
+
+/* A4 comprobante styles */
+.comprobante-a4 .items{table-layout:fixed;width:100%;border-collapse:collapse;margin-top:8px}
+.comprobante-a4 .items th,.comprobante-a4 .items td{padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+.comprobante-a4 .items td.right{text-align:right}
+.comprobante-a4 .items th:nth-child(1),.comprobante-a4 .items td:nth-child(1){width:8%}
+.comprobante-a4 .items th:nth-child(2),.comprobante-a4 .items td:nth-child(2){width:8%}
+.comprobante-a4 .items th:nth-child(3),.comprobante-a4 .items td:nth-child(3){width:62%}
+.comprobante-a4 .items th:nth-child(4),.comprobante-a4 .items td:nth-child(4){width:11%;text-align:right}
+.comprobante-a4 .items th:nth-child(5),.comprobante-a4 .items td:nth-child(5){width:11%;text-align:right}
+.qr-block{display:flex;align-items:center;justify-content:center}
+.qr-img{width:90px;height:90px;border:1px solid #ddd;padding:6px;border-radius:6px}
+
+/* Ticket (58mm) styles */
+body.print-ticket #comprobante{width:58mm}
+.comprobante-ticket{display:none}
+body.print-ticket .comprobante-a4{display:none}
+body.print-ticket .comprobante-ticket{display:block}
+.comprobante-ticket{font-size:12px;padding:6px}
+.ticket-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
+.ticket-head h3{margin:0}
+.ticket-item{display:flex;justify-content:space-between;border-top:1px dashed #e6e6e6;padding:6px 0}
+.ticket-item .desc{flex:1;margin:0 8px}
+.ticket-qr img{width:80px;height:80px;margin:8px auto;display:block}
+.ticket-body{padding-top:6px}
+.ticket-totals{margin-top:8px}
+.ticket-totals .total{font-size:14px}
+.ticket-totals div{display:flex;justify-content:flex-end;align-items:center;padding:2px 0;gap:8px}
+.ticket-totals div span:first-child{display:inline-block;min-width:70px;text-align:right}
+.ticket-totals .right{text-align:right;min-width:70px}
+.receipt-legend.small{font-size:10px;text-align:center;margin-top:8px}
+
+/* Ensure A4 shows comprobante-a4 and hides ticket by default */
+.comprobante-a4{display:block}
+.comprobante-ticket{display:none}
 .report-cards{grid-template-columns:repeat(3,1fr)}
 @media(max-width:900px){.layout{grid-template-columns:1fr}aside{position:static}nav{grid-template-columns:repeat(2,1fr)}.logout{margin-top:15px}.cards{grid-template-columns:repeat(2,1fr)}.sale-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.row,.product-row{grid-template-columns:1fr}.content{padding:16px}.page-title{align-items:flex-start;gap:12px}.page-title button{white-space:nowrap}.toolbar input{width:100%}.cards,.report-cards{grid-template-columns:1fr}nav{grid-template-columns:1fr 1fr}.sale-grid{display:block}.receipt{margin-top:16px}}
-@media print{.no-print,.history{display:none!important}.sale-grid>.receipt{display:block!important}.receipt{font-size:12px}.receipt .status{background:transparent;color:#000;padding:0}.content{padding:0!important}}
+@media print{
+	.no-print,.history{display:none!important}
+	.sale-grid>.receipt{display:block!important}
+	.receipt{font-size:12px}
+	.receipt .status{background:transparent;color:#000;padding:0}
+	.content{padding:0!important}
+
+	/* Forzar que SOLO se imprima el comprobante */
+	body * { visibility: hidden; }
+	#comprobante, #comprobante * { visibility: visible; }
+	#comprobante { position: absolute; left: 0; top: 0; width: 100%; }
+}
+
+/* Estilos para impresión tipo ticket */
+@media print {
+	body.print-ticket #comprobante { width: 280px; max-width:280px; margin:0; }
+	body.print-ticket { -webkit-print-color-adjust: exact; }
+	@page { size: auto; margin: 6mm; }
+}

@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { lastValueFrom } from 'rxjs';
+import * as XLSX from 'xlsx';
 import { ApiService } from '../core/api.service';
 import { ApiError, Producto } from '../models';
 
@@ -14,7 +16,11 @@ import { ApiError, Producto } from '../models';
       <button (click)="nuevo()">+ Nuevo producto</button>
     </div>
     <div *ngIf="mensaje" class="notice" [class.error-notice]="esError">{{ mensaje }}</div>
-    <div class="toolbar"><input placeholder="Buscar producto..." [(ngModel)]="q"></div>
+    <div class="toolbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <input placeholder="Buscar producto..." [(ngModel)]="q">
+      <button class="secondary" type="button" (click)="archivoImportar.click()">Importar Excel</button>
+      <input #archivoImportar type="file" accept=".xlsx,.xls" hidden (change)="importarExcel($event)">
+    </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Producto</th><th>Descripción</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr></thead>
@@ -124,10 +130,136 @@ export class ProductosComponent implements OnInit {
     });
   }
 
+  async importarExcel(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo) return;
+    if (!/\.(xlsx|xls)$/i.test(archivo.name)) {
+      this.mostrarErrorSimple('Seleccione un archivo Excel (.xlsx o .xls).');
+      return;
+    }
+
+    try {
+      const contenido = await this.leerArchivo(archivo);
+      const filas = this.extraerFilasExcel(contenido);
+      if (!filas.length) {
+        this.mostrarErrorSimple('El archivo no contiene filas válidas.');
+        return;
+      }
+      await this.procesarImportacion(filas);
+    } catch (error) {
+      console.error(error);
+      this.mostrarErrorSimple('No se pudo leer el archivo Excel.');
+    }
+  }
+
+  private leerArchivo(archivo: File): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(archivo);
+    });
+  }
+
+  private extraerFilasExcel(data: ArrayBuffer): any[] {
+    const libro = XLSX.read(data, { type: 'array' });
+    const hoja = libro.Sheets[libro.SheetNames[0]];
+    return hoja ? XLSX.utils.sheet_to_json<any>(hoja, { defval: null }) : [];
+  }
+
+  private async procesarImportacion(filas: any[]): Promise<void> {
+    const existentesPorId = new Map<number, Producto>(this.lista.filter(p => p.id).map(p => [p.id!, p]));
+    const existentesPorNombre = new Map<string, Producto>(this.lista.map(p => [p.nombre.trim().toLowerCase(), p]));
+    const resultados: Promise<void>[] = [];
+    const resumen = { nuevos: 0, actualizados: 0, omitidos: 0, errores: 0 };
+
+    for (const fila of filas) {
+      const productoImportado = this.productoDesdeFila(fila);
+      if (!productoImportado) {
+        resumen.omitidos++;
+        continue;
+      }
+
+      const claveNombre = productoImportado.nombre.trim().toLowerCase();
+      const existente = productoImportado.id ? existentesPorId.get(productoImportado.id) : existentesPorNombre.get(claveNombre);
+      if (existente) {
+        const actualizado: Producto = {
+          ...existente,
+          ...productoImportado,
+          id: existente.id,
+          precio: productoImportado.precio ?? existente.precio,
+          stock: productoImportado.stock ?? existente.stock,
+          activo: productoImportado.activo ?? existente.activo
+        };
+        resultados.push(lastValueFrom(this.api.actualizarProducto(actualizado)).then(() => { resumen.actualizados++; }).catch(error => { console.error(error); resumen.errores++; }));
+      } else {
+        const nuevo: Producto = {
+          nombre: productoImportado.nombre,
+          descripcion: productoImportado.descripcion,
+          precio: productoImportado.precio ?? 0,
+          stock: productoImportado.stock ?? 0,
+          activo: productoImportado.activo ?? true
+        };
+        resultados.push(lastValueFrom(this.api.crearProducto(nuevo)).then(() => { resumen.nuevos++; }).catch(error => { console.error(error); resumen.errores++; }));
+      }
+    }
+
+    if (!resultados.length) {
+      this.mostrarErrorSimple('No se encontraron productos válidos para importar.');
+      return;
+    }
+
+    await Promise.all(resultados);
+    this.mostrarMensaje(`Importación completada: ${resumen.nuevos} nuevos, ${resumen.actualizados} actualizados${resumen.errores ? `, ${resumen.errores} con error` : ''}.`);
+    this.cargar();
+  }
+
+  private productoDesdeFila(fila: any): Partial<Producto> & { nombre: string } | null {
+    const nombre = this.obtenerCampo(fila, ['Nombre', 'Producto', 'producto', 'product', 'Product']);
+    if (!nombre) return null;
+
+    return {
+      id: this.parseNumber(this.obtenerCampo(fila, ['ID', 'Id', 'id'])),
+      nombre: String(nombre).trim(),
+      descripcion: this.obtenerCampo(fila, ['Descripción', 'Descripcion', 'descripcion', 'Desc', 'desc'])?.toString().trim() || undefined,
+      precio: this.parseNumber(this.obtenerCampo(fila, ['Precio', 'precio', 'Price', 'price'])),
+      stock: this.parseNumber(this.obtenerCampo(fila, ['Stock', 'stock', 'Cantidad', 'cantidad', 'Qty', 'qty'])),
+      activo: this.parseBoolean(this.obtenerCampo(fila, ['Activo', 'activo', 'Estado', 'estado', 'Enabled', 'enabled']))
+    };
+  }
+
+  private obtenerCampo(fila: any, nombres: string[]): any {
+    for (const nombre of nombres) {
+      if (fila[nombre] != null && fila[nombre] !== '') return fila[nombre];
+    }
+    const key = Object.keys(fila).find(k => nombres.some(nombre => nombre.toLowerCase() === k.toLowerCase()));
+    return key ? fila[key] : null;
+  }
+
+  private parseNumber(valor: any): number | undefined {
+    if (valor == null || valor === '') return undefined;
+    if (typeof valor === 'number') return Number.isFinite(valor) ? valor : undefined;
+    const texto = String(valor).replace(/[^0-9\-.,]/g, '').replace(',', '.');
+    const numero = Number(texto);
+    return Number.isFinite(numero) ? numero : undefined;
+  }
+
+  private parseBoolean(valor: any): boolean | undefined {
+    if (valor == null || valor === '') return undefined;
+    if (typeof valor === 'boolean') return valor;
+    const texto = String(valor).trim().toLowerCase();
+    if (['si', 'sí', 'yes', 'true', '1', 'activo', 'enabled'].includes(texto)) return true;
+    if (['no', 'false', '0', 'inactivo', 'disabled'].includes(texto)) return false;
+    return undefined;
+  }
+
   trackById(_: number, item: Producto): number | undefined { return item.id; }
 
   private vacio(): Producto { return { nombre: '', descripcion: '', precio: 0, stock: 0, activo: true }; }
   private mostrarMensaje(mensaje: string): void { this.mensaje = mensaje; this.esError = false; }
+  private mostrarErrorSimple(mensaje: string): void { this.mensaje = mensaje; this.esError = true; }
   private mostrarError(error: HttpErrorResponse, fallback: string): void {
     this.mensaje = this.extraerMensaje(error, fallback); this.esError = true;
   }
