@@ -122,3 +122,45 @@ tbody tr:hover{background:#f8faf5}
 .stage-attentive .mascot-body{transform:rotate(-3deg);transform-origin:55px 105px;transition:transform .3s}
 @keyframes mascot-blink{0%,44%,47%,100%{transform:scaleY(1)}45.5%{transform:scaleY(.12)}}
 @media (prefers-reduced-motion:reduce){.mascot-cover-eyes{transition:none}}
+
+
+/* Secuencia inicial: personaje trae el panel desde fuera del escenario.
+   La capa decorativa no bloquea las interacciones con el formulario. */
+.login-experience{position:relative;isolation:isolate;overflow:hidden}
+.login-experience .login-panel{position:relative;z-index:2;animation:login-panel-pull 2.65s cubic-bezier(.26,.86,.34,1) both}
+.login-drag-layer{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;animation:drag-layer-exit 3.25s linear both}
+.login-drag-mascot{position:absolute;top:50%;left:0;width:150px;height:205px;filter:drop-shadow(4px 12px 8px #0c30383d);animation:drag-walk-across 3.25s ease-in-out both;transform-origin:center bottom}
+.login-drag-mascot .mascot-leg-left{transform-origin:43px 110px;animation:leg-step .34s ease-in-out 8 alternate}
+.login-drag-mascot .mascot-leg-right{transform-origin:67px 110px;animation:leg-step .34s ease-in-out 8 alternate-reverse}
+.login-drag-rope{position:absolute;left:calc(50% + 34px);top:calc(50% + 28px);width:clamp(120px,17vw,310px);height:3px;border-top:3px dashed #c3915d;transform-origin:left center;filter:drop-shadow(0 2px 2px #072b303b);animation:drag-rope-arrive 3.1s ease-out both}
+@keyframes login-panel-pull{
+  0%,12%{transform:translateX(105%);opacity:.25}
+  31%{transform:translateX(87%);opacity:1}
+  60%{transform:translateX(31%)}
+  83%{transform:translateX(-2.4%)}
+  92%{transform:translateX(1%)}
+  100%{transform:translateX(0);opacity:1}
+}
+@keyframes drag-walk-across{
+  0%{left:-160px;transform:translateY(-50%) rotate(-5deg);opacity:0}
+  8%{opacity:1}
+  29%{left:calc(50% - 170px);transform:translateY(-50%) rotate(-7deg)}
+  66%{left:calc(50% - 105px);transform:translateY(-50%) rotate(-12deg)}
+  82%{left:calc(50% - 105px);opacity:1;transform:translateY(-50%) rotate(-8deg)}
+  100%{left:calc(50% - 105px);opacity:0;transform:translateY(-50%) translateY(25px)}
+}
+@keyframes drag-rope-arrive{
+  0%,27%{opacity:0;transform:scaleX(.3)}
+  38%{opacity:1;transform:scaleX(1)}
+  81%{opacity:1;transform:scaleX(.2)}
+  100%{opacity:0;transform:scaleX(.2)}
+}
+@keyframes drag-layer-exit{0%,91%{visibility:visible}100%{visibility:hidden}}
+@media(max-width:800px){
+  .login-experience .login-panel{animation:page-rise .7s .1s both}
+  .login-drag-layer{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .login-experience .login-panel{animation:none!important;transform:none!important;opacity:1!important}
+  .login-drag-layer{display:none!important}
+}
