@@ -183,22 +183,55 @@ import { ApiError, Cliente, DetalleVenta, Producto, TipoComprobante, Venta } fro
       </section>
     </div>
 
+    <div class="modal product-modal no-print" *ngIf="ventaAnular" role="presentation">
+      <section class="dialog inventory-dialog" role="alertdialog" aria-modal="true" aria-labelledby="titulo-anular">
+        <span class="product-dialog-eyebrow">ANULACIÓN DE COMPROBANTE</span>
+        <h3 id="titulo-anular">¿Anular esta venta?</h3>
+        <p>Comprobante <strong>{{ ventaAnular.serie }}-{{ ventaAnular.numero }}</strong></p>
+        <p>Su estado cambiará a ANULADA, permanecerá en el historial y se repondrá el stock de los productos vendidos. Esta operación no elimina el registro.</p>
+        <div class="actions">
+          <button type="button" class="secondary" (click)="ventaAnular=undefined" [disabled]="anulando">Cancelar</button>
+          <button type="button" class="danger-button" (click)="confirmarAnulacion()" [disabled]="anulando">{{ anulando ? 'Anulando...' : 'Confirmar anulación' }}</button>
+        </div>
+      </section>
+    </div>
+    <div class="modal product-modal no-print" *ngIf="ventaDetalle" role="presentation">
+      <section class="dialog inventory-dialog sale-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="titulo-detalle-venta">
+        <span class="product-dialog-eyebrow">HISTORIAL DE VENTAS</span>
+        <h3 id="titulo-detalle-venta">Detalle del comprobante</h3>
+        <p><b>{{ ventaDetalle.serie }}-{{ ventaDetalle.numero }}</b> · {{ ventaDetalle.fecha | date:'dd/MM/yyyy HH:mm' }}</p>
+        <p>Cliente: {{ ventaDetalle.clienteNombre }} · Estado: {{ ventaDetalle.estado }}</p>
+        <div class="table-wrap mini"><table>
+          <thead><tr><th>Artículo</th><th>Cantidad</th><th>Subtotal</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let d of ventaDetalle.detalles"><td>{{ d.productoNombre || ('ID '+d.productoId) }}</td><td>{{ d.cantidad }}</td><td>S/ {{ d.subtotal | number:'1.2-2' }}</td></tr>
+            <tr *ngIf="!ventaDetalle.detalles?.length"><td colspan="3">Sin detalle disponible.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="total"><span>Total</span><strong>S/ {{ ventaDetalle.total | number:'1.2-2' }}</strong></div>
+        <div class="actions"><button type="button" (click)="ventaDetalle=undefined">Cerrar</button></div>
+      </section>
+    </div>
     <section class="panel history no-print">
       <div class="history-title"><div><h3>Comprobantes emitidos</h3><p>Las ventas anuladas conservan el historial y reponen el stock.</p></div></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Comprobante</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th></th></tr></thead>
           <tbody>
-            <tr *ngFor="let v of ventas">
+            <tr *ngFor="let v of ventas" [class.sale-row-annulled]="ventaAnimadaId === v.id">
               <td><b>{{ v.serie }}-{{ v.numero }}</b><br><small>{{ textoTipo(v.tipoComprobante) }}</small></td>
               <td>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
               <td>{{ v.clienteNombre }}</td>
               <td>S/ {{ v.total | number:'1.2-2' }}</td>
               <td><span class="status" [class.danger]="v.estado==='ANULADA'">{{ v.estado }}</span></td>
               <td>
+                <button class="link" (click)="abrirDetalleVenta(v)">Ver detalle</button>
                 <button class="link" (click)="reimprimir(v)">Imprimir</button>
                 <button class="link" (click)="descargarPdf(v)">PDF</button>
-                <button *ngIf="v.estado==='EMITIDA'" class="link danger-text" (click)="anular(v)">Anular</button>
+                <button *ngIf="v.estado==='EMITIDA'" class="link danger-text trash-eat-button" [class.trash-eating]="ventaAnimadaId === v.id" [disabled]="anulando" (click)="anular(v)">
+                  <span class="trash-bin" aria-hidden="true"><span class="trash-bin-lid"></span><span class="trash-bin-body"></span></span>
+                  <span class="trash-word" aria-hidden="true"><span>A</span><span>n</span><span>u</span><span>l</span><span>a</span><span>r</span></span>
+                </button>
               </td>
             </tr>
             <tr *ngIf="!ventas.length"><td colspan="6" class="empty">Todavía no hay ventas registradas.</td></tr>
@@ -213,6 +246,10 @@ export class VentasComponent implements OnInit {
   productos: Producto[] = [];
   clientes: Cliente[] = [];
   ventas: Venta[] = [];
+  ventaAnular?: Venta;
+  ventaDetalle?: Venta;
+  ventaAnimadaId?: number;
+  anulando = false;
   tipo: TipoComprobante = 'BOLETA';
   clienteId?: number;
   productoId?: number;
@@ -472,17 +509,34 @@ export class VentasComponent implements OnInit {
     });
   }
 
+  abrirDetalleVenta(venta: Venta): void {
+    this.api.obtenerVenta(venta.id).subscribe({
+      next: detalle => this.ventaDetalle = detalle,
+      error: error => this.mostrarError(error, 'No se pudo consultar el detalle del comprobante.')
+    });
+  }
+
   anular(venta: Venta): void {
-    if (!confirm(`¿Anular ${venta.serie}-${venta.numero}? El stock será repuesto.`)) return;
+    this.ventaAnular = venta;
+  }
+
+  confirmarAnulacion(): void {
+    const venta = this.ventaAnular;
+    if (!venta || this.anulando) return;
+    this.anulando = true;
     this.api.anularVenta(venta.id).subscribe({
       next: anulada => {
+        this.ventaAnular = undefined;
         this.ventaEmitida = anulada;
-        this.mensaje = `Venta ${anulada.serie}-${anulada.numero} anulada y stock repuesto.`;
+        this.ventaAnimadaId = anulada.id;
+        this.ventas = this.ventas.map(v => v.id === anulada.id ? anulada : v);
+        this.mensaje = `Venta ${anulada.serie}-${anulada.numero} anulada. Historial conservado y stock repuesto.`;
         this.esError = false;
+        this.anulando = false;
         this.cargarCatalogos();
-        this.cargarVentas();
+        setTimeout(() => { this.ventaAnimadaId = undefined; this.cargarVentas(); }, 700);
       },
-      error: error => this.mostrarError(error, 'No se pudo anular la venta.')
+      error: error => { this.anulando = false; this.mostrarError(error, 'No se pudo anular la venta.'); }
     });
   }
 
