@@ -37,7 +37,7 @@ import { ApiError, Producto } from '../models';
       <table>
         <thead><tr><th>Producto</th><th>Descripción</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr></thead>
         <tbody>
-          <tr *ngFor="let p of filtrados; trackBy: trackById">
+          <tr *ngFor="let p of filtrados; trackBy: trackById" [class.inventory-row-removing]="eliminandoAnimacionId === p.id">
             <td><b>{{ p.nombre }}</b></td>
             <td>{{ p.descripcion || '-' }}</td>
             <td>S/ {{ p.precio | number:'1.2-2' }}</td>
@@ -47,7 +47,10 @@ import { ApiError, Producto } from '../models';
               <button type="button" class="link" (click)="verDetalle(p)">Ver</button>
               <button type="button" class="link" (click)="editar(p)">Editar</button>
               <button type="button" class="link" (click)="abrirAjuste(p)">Ajustar</button>
-              <button type="button" class="link danger-text" (click)="solicitarEliminar(p)">Eliminar</button>
+              <button type="button" class="link danger-text trash-eat-button" [class.trash-eating]="eliminandoAnimacionId === p.id" [disabled]="procesandoEliminar || eliminandoAnimacionId === p.id" (click)="solicitarEliminar(p)" aria-label="Eliminar artículo">
+                <span class="trash-bin" aria-hidden="true"><span class="trash-bin-lid"></span><span class="trash-bin-body"></span></span>
+                <span class="trash-word" aria-hidden="true"><span>E</span><span>l</span><span>i</span><span>m</span><span>i</span><span>n</span><span>a</span><span>r</span></span>
+              </button>
             </td>
           </tr>
           <tr *ngIf="!filtrados.length"><td colspan="6" class="empty">{{ lista.length ? 'No se encontraron productos. Prueba otro filtro.' : 'No hay productos registrados.' }}</td></tr>
@@ -143,6 +146,7 @@ export class ProductosComponent implements OnInit {
   tipoAjuste: 'reponer' | 'descontar' = 'reponer';
   procesandoAjuste = false;
   procesandoEliminar = false;
+  eliminandoAnimacionId?: number;
   importando = false;
   errorAjuste = '';
   private mensajeTimer?: ReturnType<typeof setTimeout>;
@@ -211,10 +215,14 @@ export class ProductosComponent implements OnInit {
     this.procesandoEliminar = true;
     this.api.eliminarProducto(p.id).subscribe({
       next: () => {
-        this.procesandoEliminar = false;
         this.productoEliminar = null;
-        this.mostrarMensaje('Producto eliminado correctamente.');
-        this.cargar();
+        this.eliminandoAnimacionId = p.id;
+        setTimeout(() => {
+          this.procesandoEliminar = false;
+          this.eliminandoAnimacionId = undefined;
+          this.mostrarMensaje('Producto eliminado correctamente.');
+          this.cargar();
+        }, 700);
       },
       error: e => { this.procesandoEliminar = false; this.productoEliminar = null; this.mostrarError(e, 'No se pudo eliminar el producto.'); }
     });
@@ -388,12 +396,14 @@ export class ProductosComponent implements OnInit {
     }
 
     if (!resultados.length) {
-      this.mostrarErrorSimple('No se encontraron productos válidos para importar.');
+      this.mostrarErrorSimple(`Importación revisada: 0 nuevos, 0 actualizados, ${resumen.omitidos} omitidos, 0 con error. No se encontraron filas válidas.`);
       return;
     }
 
     await Promise.all(resultados);
-    this.mostrarMensaje(`Importación completada: ${resumen.nuevos} nuevos, ${resumen.actualizados} actualizados, ${resumen.omitidos} omitidos, ${resumen.errores} con error.`);
+    const texto = `Importación completada: ${resumen.nuevos} nuevos, ${resumen.actualizados} actualizados, ${resumen.omitidos} omitidos, ${resumen.errores} con error.`;
+    if (resumen.errores) this.mostrarErrorSimple(texto);
+    else this.mostrarMensaje(texto);
     this.cargar();
   }
 
