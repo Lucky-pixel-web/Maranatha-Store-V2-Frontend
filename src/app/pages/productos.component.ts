@@ -15,11 +15,23 @@ import { ApiError, Producto } from '../models';
       <div><h2>Productos e inventario</h2><p>Control de precios y stock en PostgreSQL</p></div>
       <button (click)="nuevo()">+ Nuevo producto</button>
     </div>
-    <div *ngIf="mensaje" class="notice" [class.error-notice]="esError">{{ mensaje }}</div>
+    <div *ngIf="mensaje" class="notice inventory-notice" [class.error-notice]="esError" role="status">{{ mensaje }}</div>
     <div class="toolbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <input placeholder="Buscar producto..." [(ngModel)]="q">
-      <button class="secondary" type="button" (click)="archivoImportar.click()">Importar Excel</button>
+      <input aria-label="Buscar productos" placeholder="Buscar por nombre, descripción o ID..." [(ngModel)]="q">
+      <select aria-label="Filtrar por existencias" [(ngModel)]="filtroStock" class="stock-filter">
+        <option value="todos">Todos los artículos</option>
+        <option value="bajo">Stock bajo (1–5)</option>
+        <option value="agotado">Sin stock (0)</option>
+        <option value="disponible">Disponibles (6+)</option>
+      </select>
+      <button class="secondary" type="button" (click)="archivoImportar.click()" [disabled]="importando">Importar Excel</button>
+      <button class="secondary" type="button" (click)="descargarPlantilla()">Descargar plantilla</button>
       <input #archivoImportar type="file" accept=".xlsx,.xls" hidden (change)="importarExcel($event)">
+    </div>
+    <div class="search-result-feedback" *ngIf="q.trim() || filtroStock !== 'todos'" aria-live="polite">
+      <span aria-hidden="true">{{ filtrados.length ? '✦' : '⌕' }}</span>
+      {{ filtrados.length ? (filtrados.length + ' artículo(s) encontrado(s)') : 'No encontramos artículos con estos filtros. Prueba otro nombre, ID o estado.' }}
+      <button type="button" class="link" (click)="q=''; filtroStock='todos'">Limpiar filtros</button>
     </div>
     <div class="table-wrap">
       <table>
@@ -31,13 +43,58 @@ import { ApiError, Producto } from '../models';
             <td>S/ {{ p.precio | number:'1.2-2' }}</td>
             <td>{{ p.stock }}</td>
             <td><span [class.danger]="p.stock <= 5" class="status">{{ p.stock <= 5 ? 'Stock bajo' : 'Disponible' }}</span></td>
-            <td><button class="link" (click)="editar(p)">Editar</button><button class="link danger-text" (click)="eliminar(p)">Eliminar</button></td>
+            <td>
+              <button type="button" class="link" (click)="verDetalle(p)">Ver</button>
+              <button type="button" class="link" (click)="editar(p)">Editar</button>
+              <button type="button" class="link" (click)="abrirAjuste(p)">Ajustar</button>
+              <button type="button" class="link danger-text" (click)="solicitarEliminar(p)">Eliminar</button>
+            </td>
           </tr>
-          <tr *ngIf="!filtrados.length"><td colspan="6" class="empty">No hay productos registrados.</td></tr>
+          <tr *ngIf="!filtrados.length"><td colspan="6" class="empty">{{ lista.length ? 'No se encontraron productos. Prueba otro filtro.' : 'No hay productos registrados.' }}</td></tr>
         </tbody>
       </table>
     </div>
 
+    <div class="modal product-modal" *ngIf="detalle" role="presentation">
+      <section class="dialog inventory-dialog" role="dialog" aria-modal="true" aria-label="Detalle del producto">
+        <span class="product-dialog-eyebrow">FICHA DEL ARTÍCULO</span>
+        <h3>{{ detalle.nombre }}</h3>
+        <p>{{ detalle.descripcion || 'Sin descripción' }}</p>
+        <dl class="inventory-details">
+          <div><dt>ID interno</dt><dd>{{ detalle.id }}</dd></div>
+          <div><dt>Precio</dt><dd>S/ {{ detalle.precio | number:'1.2-2' }}</dd></div>
+          <div><dt>Stock</dt><dd>{{ detalle.stock }}</dd></div>
+          <div><dt>Estado</dt><dd>{{ detalle.stock <= 5 ? 'Stock bajo' : 'Disponible' }}</dd></div>
+        </dl>
+        <p class="inventory-hint">El ID interno no sustituye el código comercial único pendiente del backend.</p>
+        <div class="actions"><button type="button" (click)="detalle=null">Cerrar</button></div>
+      </section>
+    </div>
+    <div class="modal product-modal" *ngIf="ajusteProducto" role="presentation">
+      <form class="dialog inventory-dialog" role="dialog" aria-modal="true" aria-label="Ajustar stock" (ngSubmit)="confirmarAjuste()">
+        <span class="product-dialog-eyebrow">CONTROL DE INVENTARIO</span>
+        <h3>Ajustar stock</h3>
+        <p>{{ ajusteProducto.nombre }}</p>
+        <p>Stock actual: <strong>{{ ajusteProducto.stock }}</strong></p>
+        <label>Operación
+          <select name="tipoAjuste" [(ngModel)]="tipoAjuste"><option value="reponer">Reponer (sumar)</option><option value="descontar">Descontar (restar)</option></select>
+        </label>
+        <label>Cantidad
+          <input name="cantidadAjuste" type="number" min="1" step="1" [(ngModel)]="cantidadAjuste" required>
+        </label>
+        <div class="inventory-preview">Stock estimado: <strong>{{ stockEstimado }}</strong></div>
+        <p class="inventory-hint">El backend actual no permite registrar motivo ni consultar historial de ajustes. Esta operación solo modifica existencias.</p>
+        <div *ngIf="errorAjuste" role="alert" class="product-form-error">{{ errorAjuste }}</div>
+        <div class="actions"><button type="button" class="secondary" (click)="ajusteProducto=null" [disabled]="procesandoAjuste">Cancelar</button><button type="submit" [disabled]="procesandoAjuste">{{ procesandoAjuste ? 'Aplicando...' : 'Confirmar ajuste' }}</button></div>
+      </form>
+    </div>
+    <div class="modal product-modal" *ngIf="productoEliminar" role="presentation">
+      <section class="dialog inventory-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-title">
+        <span class="product-dialog-eyebrow">CONFIRMAR ACCIÓN</span><h3 id="delete-title">¿Eliminar artículo?</h3>
+        <p>Eliminarás <strong>{{ productoEliminar.nombre }}</strong>. Esta acción no se puede deshacer.</p>
+        <div class="actions"><button type="button" class="secondary" (click)="productoEliminar=null" [disabled]="procesandoEliminar">Cancelar</button><button type="button" class="danger-button" (click)="confirmarEliminar()" [disabled]="procesandoEliminar">{{ procesandoEliminar ? 'Eliminando...' : 'Sí, eliminar' }}</button></div>
+      </section>
+    </div>
     <div class="modal product-modal" *ngIf="abierto" role="presentation">
       <form class="dialog product-dialog" (ngSubmit)="guardar()" role="dialog" aria-modal="true" aria-labelledby="titulo-producto" novalidate>
         <div class="product-dialog-head">
@@ -78,6 +135,17 @@ export class ProductosComponent implements OnInit {
   private readonly api = inject(ApiService);
   lista: Producto[] = [];
   q = '';
+  filtroStock: 'todos' | 'bajo' | 'agotado' | 'disponible' = 'todos';
+  detalle: Producto | null = null;
+  ajusteProducto: Producto | null = null;
+  productoEliminar: Producto | null = null;
+  cantidadAjuste = 1;
+  tipoAjuste: 'reponer' | 'descontar' = 'reponer';
+  procesandoAjuste = false;
+  procesandoEliminar = false;
+  importando = false;
+  errorAjuste = '';
+  private mensajeTimer?: ReturnType<typeof setTimeout>;
   abierto = false;
   procesando = false;
   mensaje = '';
@@ -87,10 +155,80 @@ export class ProductosComponent implements OnInit {
 
   get filtrados(): Producto[] {
     const texto = this.q.toLowerCase().trim();
-    return this.lista.filter(p => `${p.nombre} ${p.descripcion || ''}`.toLowerCase().includes(texto));
+    return this.lista.filter(p => {
+      const coincideTexto = `${p.id ?? ''} ${p.nombre} ${p.descripcion || ''}`.toLowerCase().includes(texto);
+      const coincideStock = this.filtroStock === 'todos'
+        || (this.filtroStock === 'bajo' && p.stock >= 1 && p.stock <= 5)
+        || (this.filtroStock === 'agotado' && p.stock === 0)
+        || (this.filtroStock === 'disponible' && p.stock > 5);
+      return coincideTexto && coincideStock;
+    });
   }
 
   ngOnInit(): void { this.cargar(); }
+
+  get stockEstimado(): number {
+    if (!this.ajusteProducto) return 0;
+    return this.ajusteProducto.stock + (this.tipoAjuste === 'reponer' ? 1 : -1) * (Number(this.cantidadAjuste) || 0);
+  }
+
+  verDetalle(p: Producto): void { this.detalle = p; }
+
+  abrirAjuste(p: Producto): void {
+    this.ajusteProducto = p;
+    this.cantidadAjuste = 1;
+    this.tipoAjuste = 'reponer';
+    this.errorAjuste = '';
+  }
+
+  confirmarAjuste(): void {
+    const p = this.ajusteProducto;
+    const cantidad = Number(this.cantidadAjuste);
+    if (!p?.id || this.procesandoAjuste) return;
+    if (!Number.isInteger(cantidad) || cantidad < 1) {
+      this.errorAjuste = 'Ingresa una cantidad entera mayor que cero.'; return;
+    }
+    if (this.tipoAjuste === 'descontar' && cantidad > p.stock) {
+      this.errorAjuste = 'La cantidad supera el stock disponible.'; return;
+    }
+    this.procesandoAjuste = true;
+    this.api.ajustarStock(p.id, this.tipoAjuste, cantidad).subscribe({
+      next: () => {
+        this.procesandoAjuste = false;
+        this.ajusteProducto = null;
+        this.mostrarMensaje('Stock actualizado correctamente.');
+        this.cargar();
+      },
+      error: e => { this.procesandoAjuste = false; this.errorAjuste = this.extraerMensaje(e, 'No se pudo actualizar el stock.'); }
+    });
+  }
+
+  solicitarEliminar(p: Producto): void { this.productoEliminar = p; }
+
+  confirmarEliminar(): void {
+    const p = this.productoEliminar;
+    if (!p?.id || this.procesandoEliminar) return;
+    this.procesandoEliminar = true;
+    this.api.eliminarProducto(p.id).subscribe({
+      next: () => {
+        this.procesandoEliminar = false;
+        this.productoEliminar = null;
+        this.mostrarMensaje('Producto eliminado correctamente.');
+        this.cargar();
+      },
+      error: e => { this.procesandoEliminar = false; this.productoEliminar = null; this.mostrarError(e, 'No se pudo eliminar el producto.'); }
+    });
+  }
+
+  descargarPlantilla(): void {
+    const hoja = XLSX.utils.json_to_sheet([
+      { Nombre: 'Ejemplo cuaderno', Descripcion: 'Cuaderno de prueba', Precio: 4.5, Stock: 10, Activo: 'SI' },
+      { Nombre: 'Ejemplo lápiz', Descripcion: 'Lápiz de prueba', Precio: 1.5, Stock: 12, Activo: 'SI' }
+    ]);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, 'Articulos');
+    XLSX.writeFile(libro, 'Plantilla_Maranatha_Articulos.xlsx');
+  }
 
   cargar(): void {
     this.api.productos().subscribe({
@@ -162,20 +300,15 @@ export class ProductosComponent implements OnInit {
     });
   }
 
-  eliminar(producto: Producto): void {
-    if (!producto.id || !confirm(`¿Eliminar ${producto.nombre}?`)) return;
-    this.api.eliminarProducto(producto.id).subscribe({
-      next: () => { this.mostrarMensaje('Producto eliminado.'); this.cargar(); },
-      error: error => this.mostrarError(error, 'No se pudo eliminar el producto.')
-    });
-  }
 
   async importarExcel(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const archivo = input.files?.[0];
     input.value = '';
     if (!archivo) return;
+    this.importando = true;
     if (!/\.(xlsx|xls)$/i.test(archivo.name)) {
+      this.importando = false;
       this.mostrarErrorSimple('Seleccione un archivo Excel (.xlsx o .xls).');
       return;
     }
@@ -191,7 +324,7 @@ export class ProductosComponent implements OnInit {
     } catch (error) {
       console.error(error);
       this.mostrarErrorSimple('No se pudo leer el archivo Excel.');
-    }
+    } finally { this.importando = false; }
   }
 
   private leerArchivo(archivo: File): Promise<ArrayBuffer> {
@@ -298,10 +431,18 @@ export class ProductosComponent implements OnInit {
   trackById(_: number, item: Producto): number | undefined { return item.id; }
 
   private vacio(): Producto { return { nombre: '', descripcion: '', precio: 0, stock: 0, activo: true }; }
-  private mostrarMensaje(mensaje: string): void { this.mensaje = mensaje; this.esError = false; }
-  private mostrarErrorSimple(mensaje: string): void { this.mensaje = mensaje; this.esError = true; }
+  private mostrarMensaje(mensaje: string): void {
+    this.mensaje = mensaje; this.esError = false; this.programarLimpiarMensaje();
+  }
+  private mostrarErrorSimple(mensaje: string): void {
+    this.mensaje = mensaje; this.esError = true; this.programarLimpiarMensaje();
+  }
+  private programarLimpiarMensaje(): void {
+    if (this.mensajeTimer) clearTimeout(this.mensajeTimer);
+    this.mensajeTimer = setTimeout(() => this.mensaje = '', 5500);
+  }
   private mostrarError(error: HttpErrorResponse, fallback: string): void {
-    this.mensaje = this.extraerMensaje(error, fallback); this.esError = true;
+    this.mensaje = this.extraerMensaje(error, fallback); this.esError = true; this.programarLimpiarMensaje();
   }
   private extraerMensaje(error: HttpErrorResponse, fallback: string): string {
     return (error.error as ApiError)?.message || (error.status === 0 ? 'No hay conexión con el backend.' : fallback);
