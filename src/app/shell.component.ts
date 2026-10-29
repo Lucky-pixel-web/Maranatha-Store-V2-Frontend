@@ -19,7 +19,7 @@ interface SectionVisual {
   template: `
     <div class="layout maranatha-app" [class.is-dark]="darkMode">
       <aside>
-        <div class="brand"><span class="logo">M</span><div><b>Maranatha</b><small>Store</small></div></div>
+        <div class="brand brand-official"><img class="maranatha-brand-image sidebar-brand-image" src="/maranatha-logo.png" alt="Librería Maranatha" (error)="onLogoError($event)"><div class="brand-fallback"><b>Maranatha</b><small>Store</small></div></div>
         <nav aria-label="Navegación principal">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}"><span class="nav-icon" aria-hidden="true">⌂</span><span class="nav-label">Inicio</span></a>
           <a routerLink="/productos" routerLinkActive="active"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-label">Productos y stock</span></a>
@@ -151,6 +151,10 @@ export class ShellComponent implements OnDestroy {
       'cambiar-contrasena': { id: 'cuenta', eyebrow: 'CUENTA / SEGURIDAD', title: 'Tu acceso, protegido.', description: 'Gestiona la seguridad de tu cuenta.' }
     };
     return sections[path] || { id: 'inicio', eyebrow: 'BIENVENIDO / MARANATHA STORE', title: 'Así va tu negocio hoy.', description: 'Un vistazo a lo que importa: productos, clientes y ventas.' };
+  }
+
+  onLogoError(event: Event): void {
+    (event.target as HTMLImageElement).style.display = 'none';
   }
 
   toggleTheme(): void {
