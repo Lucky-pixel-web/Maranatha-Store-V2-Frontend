@@ -10,17 +10,73 @@ import { ApiError } from '../models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="login-page">
-      <form class="login-card" (ngSubmit)="entrar()">
-        <div class="login-logo">M</div>
-        <h2>Maranatha Store</h2>
-        <p>Sistema de Control V.1</p>
-        <label>Usuario<input [(ngModel)]="usuario" name="usuario" required autocomplete="username"></label>
-        <label>Contraseña<input type="password" [(ngModel)]="clave" name="clave" required autocomplete="current-password"></label>
-        <button [disabled]="cargando">{{ cargando ? 'Ingresando...' : 'Ingresar' }}</button>
-        <small class="error" *ngIf="error">{{ error }}</small>
-        <small class="hint">Incia con tu cuenta</small>
-      </form>
+    <div class="login-page login-experience">
+      <section class="login-stage" aria-label="Bienvenida a Maranatha Store">
+        <div class="login-stage-pattern" aria-hidden="true"></div>
+        <div class="stage-top"><span class="stage-symbol">M<span>✦</span></span><span>MARANATHA / STORE</span></div>
+        <div class="stage-copy">
+          <span class="stage-kicker"><span class="live-dot"></span> TU ESPACIO DE TRABAJO</span>
+          <h1>Todo en orden.<br><em>Todo en movimiento.</em></h1>
+          <p>Productos, existencias y ventas de tu librería, organizados en un solo lugar.</p>
+        </div>
+        <div class="stage-art" aria-hidden="true">
+          <div class="stage-art-glow"></div>
+          <div class="floating-note note-first"><span class="note-icon">▤</span><span>Inventario <b>al día</b></span></div>
+          <div class="floating-note note-second"><span class="note-icon">↗</span><span>Ventas <b>organizadas</b></span></div>
+          <div class="stacked-book book-back"></div>
+          <div class="stacked-book book-middle"></div>
+          <div class="stacked-book book-front"><span class="book-mark">M.</span><span class="book-lines"></span></div>
+          <svg class="walking-mascot" viewBox="0 0 110 156" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="53" cy="146" rx="33" ry="7" fill="#13383B" opacity=".14"/>
+            <g class="mascot-body">
+              <circle cx="55" cy="39" r="18" fill="#F3C49A"/>
+              <path d="M37 40C35 19 45 14 57 14C69 14 76 23 74 34C62 30 54 23 43 31Z" fill="#173B40"/>
+              <path d="M45 62C37 63 29 72 27 85L21 111H88L82 82C80 70 72 62 64 62Z" fill="#F6F1E5" stroke="#173B40" stroke-width="3"/>
+              <path d="M44 65L55 80L65 64" stroke="#DB9547" stroke-width="5" stroke-linecap="round"/>
+              <path d="M40 80H71" stroke="#D7B78A" stroke-width="2" stroke-linecap="round"/>
+              <path class="mascot-arm-left" d="M27 78L11 96L19 110" stroke="#F3C49A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              <path class="mascot-arm-right" d="M83 78L99 94L91 108" stroke="#F3C49A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              <path class="mascot-leg-left" d="M42 111L31 136L20 140" stroke="#173B40" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+              <path class="mascot-leg-right" d="M67 111L77 135L89 140" stroke="#173B40" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="16" y="137" width="19" height="8" rx="4" fill="#DB9547"/>
+              <rect x="78" y="137" width="19" height="8" rx="4" fill="#DB9547"/>
+              <rect x="36" y="89" width="37" height="25" rx="4" fill="#DFA860" stroke="#173B40" stroke-width="2"/>
+              <path d="M43 96H64M43 101H59" stroke="#173B40" stroke-width="2" opacity=".6"/>
+            </g>
+          </svg>
+          <div class="stage-ground"></div>
+        </div>
+        <p class="stage-footnote">DISEÑADO PARA LA LIBRERÍA DE CADA DÍA · 2026</p>
+      </section>
+
+      <section class="login-panel">
+        <div class="login-panel-top"><span class="login-panel-mark">M.</span><span>MARANATHA STORE</span></div>
+        <form class="login-card" (ngSubmit)="entrar()" #loginForm="ngForm">
+          <div class="login-eyebrow">BIENVENIDO DE NUEVO</div>
+          <h2>Tu espacio comienza aquí.</h2>
+          <p>Ingresa con tus credenciales para administrar tu librería.</p>
+
+          <label for="usuario">Nombre de usuario</label>
+          <div class="login-control">
+            <input id="usuario" [(ngModel)]="usuario" name="usuario" required autocomplete="username" placeholder="Escribe tu usuario" [disabled]="cargando">
+          </div>
+
+          <label for="clave">Contraseña</label>
+          <div class="login-control password-control">
+            <input id="clave" [type]="mostrarClave ? 'text' : 'password'" [(ngModel)]="clave" name="clave" required autocomplete="current-password" placeholder="Escribe tu contraseña" [disabled]="cargando">
+            <button type="button" class="password-toggle" (click)="mostrarClave = !mostrarClave" [attr.aria-label]="mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'" [disabled]="cargando">
+              {{ mostrarClave ? 'Ocultar' : 'Ver' }}
+            </button>
+          </div>
+
+          <p class="login-error" *ngIf="error" role="alert">{{ error }}</p>
+          <button type="submit" class="login-submit" [disabled]="cargando || loginForm.invalid">
+            <span>{{ cargando ? 'Verificando acceso...' : 'Entrar al panel' }}</span><span aria-hidden="true">↗</span>
+          </button>
+          <div class="login-secure"><span aria-hidden="true">◈</span> Acceso protegido · Maranatha Store V2</div>
+        </form>
+        <div class="login-panel-bottom">GESTIÓN COMERCIAL · INVENTARIO · VENTAS</div>
+      </section>
     </div>
   `
 })
@@ -29,10 +85,12 @@ export class LoginComponent {
   clave = '';
   error = '';
   cargando = false;
+  mostrarClave = false;
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   entrar(): void {
+    if (!this.usuario.trim() || !this.clave || this.cargando) return;
     this.error = '';
     this.cargando = true;
     this.auth.login(this.usuario.trim(), this.clave).subscribe({
@@ -40,7 +98,7 @@ export class LoginComponent {
       error: (error: HttpErrorResponse) => {
         const body = error.error as ApiError;
         this.error = body?.message || (error.status === 0
-          ? 'No se puede conectar con el Gateway en el puerto 8080.'
+          ? 'No se puede conectar con el servidor. Comprueba que el backend esté encendido.'
           : 'Usuario o contraseña incorrectos.');
         this.cargando = false;
       }
