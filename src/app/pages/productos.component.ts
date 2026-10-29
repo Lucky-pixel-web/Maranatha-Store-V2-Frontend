@@ -38,19 +38,37 @@ import { ApiError, Producto } from '../models';
       </table>
     </div>
 
-    <div class="modal" *ngIf="abierto">
-      <form class="dialog" (ngSubmit)="guardar()">
-        <h3>{{ form.id ? 'Editar' : 'Nuevo' }} producto</h3>
-        <label>Nombre<input [(ngModel)]="form.nombre" name="nombre" required maxlength="150"></label>
-        <label>Descripción<input [(ngModel)]="form.descripcion" name="descripcion" maxlength="500"></label>
-        <div class="row">
-          <label>Precio<input type="number" min="0" step="0.01" [(ngModel)]="form.precio" name="precio" required></label>
-          <label>Stock<input type="number" min="0" step="1" [(ngModel)]="form.stock" name="stock" required></label>
+    <div class="modal product-modal" *ngIf="abierto" (click)="cerrarModal()" role="presentation">
+      <form class="dialog product-dialog" (ngSubmit)="guardar()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="titulo-producto" novalidate>
+        <div class="product-dialog-head">
+          <div>
+            <span class="product-dialog-eyebrow">MARANATHA · CATÁLOGO</span>
+            <h3 id="titulo-producto">{{ form.id ? 'Editar artículo' : 'Registrar nuevo artículo' }}</h3>
+            <p>Completa la información para mantener actualizado tu inventario.</p>
+          </div>
+          <button class="product-dialog-close" type="button" (click)="cerrarModal()" aria-label="Cerrar formulario">×</button>
         </div>
-        <small class="error" *ngIf="errorFormulario">{{ errorFormulario }}</small>
-        <div class="actions">
-          <button type="button" class="secondary" (click)="abierto=false" [disabled]="procesando">Cancelar</button>
-          <button [disabled]="procesando">{{ procesando ? 'Guardando...' : 'Guardar' }}</button>
+        <div class="product-dialog-fields">
+          <label>Nombre del artículo <span class="required-star">*</span>
+            <input [(ngModel)]="form.nombre" name="nombre" required maxlength="150" placeholder="Ej. Cuaderno cuadriculado A4" [class.field-invalid]="errorFormulario && !form.nombre.trim()" (input)="limpiarError()" autofocus>
+          </label>
+          <label>Descripción
+            <input [(ngModel)]="form.descripcion" name="descripcion" maxlength="500" placeholder="Características del artículo" (input)="limpiarError()">
+          </label>
+          <div class="row">
+            <label>Precio (S/) <span class="required-star">*</span>
+              <input type="number" min="0.01" step="0.01" [(ngModel)]="form.precio" name="precio" required [class.field-invalid]="errorFormulario && (!form.precio || form.precio <= 0)" (input)="limpiarError()">
+            </label>
+            <label>Stock <span class="required-star">*</span>
+              <input type="number" min="0" step="1" [(ngModel)]="form.stock" name="stock" required [class.field-invalid]="errorFormulario && (!esStockValido())" (input)="limpiarError()">
+            </label>
+          </div>
+          <p class="product-field-hint">El precio debe ser mayor que cero y el stock debe ser un número entero no negativo.</p>
+          <div class="product-form-error" *ngIf="errorFormulario" role="alert"><span aria-hidden="true">!</span>{{ errorFormulario }}</div>
+        </div>
+        <div class="actions product-dialog-actions">
+          <button type="button" class="secondary" (click)="cerrarModal()" [disabled]="procesando">Cancelar</button>
+          <button type="submit" [disabled]="procesando">{{ procesando ? 'Guardando...' : (form.id ? 'Guardar cambios' : 'Registrar artículo') }}</button>
         </div>
       </form>
     </div>
@@ -81,6 +99,18 @@ export class ProductosComponent implements OnInit {
     });
   }
 
+  cerrarModal(): void {
+    if (!this.procesando) this.abierto = false;
+  }
+
+  limpiarError(): void {
+    if (this.errorFormulario) this.errorFormulario = '';
+  }
+
+  esStockValido(): boolean {
+    return this.form.stock != null && Number.isInteger(Number(this.form.stock)) && Number(this.form.stock) >= 0;
+  }
+
   nuevo(): void {
     this.form = this.vacio();
     this.errorFormulario = '';
@@ -99,8 +129,12 @@ export class ProductosComponent implements OnInit {
       this.errorFormulario = 'Ingrese el nombre del producto.';
       return;
     }
-    if (this.form.precio == null || this.form.precio < 0 || this.form.stock == null || this.form.stock < 0) {
-      this.errorFormulario = 'Precio y stock deben ser valores válidos no negativos.';
+    if (this.form.precio == null || !Number.isFinite(Number(this.form.precio)) || Number(this.form.precio) <= 0) {
+      this.errorFormulario = 'El precio debe ser mayor que cero.';
+      return;
+    }
+    if (!this.esStockValido()) {
+      this.errorFormulario = 'El stock debe ser un número entero no negativo.';
       return;
     }
 
