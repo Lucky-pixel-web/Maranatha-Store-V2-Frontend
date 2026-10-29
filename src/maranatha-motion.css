@@ -105,3 +105,20 @@ tbody tr:hover{background:#f8faf5}
 @media(max-width:600px){nav{grid-template-columns:repeat(2,minmax(0,1fr))}main header{padding:16px}.page-title{flex-wrap:wrap}.page-title button{white-space:normal}.cards{grid-template-columns:1fr}.login-stage{max-height:230px;min-height:230px}.stage-copy h1{font-size:27px}.stage-copy p{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 @media print{.layout aside,.layout header{display:none!important}main{display:block!important}.content{padding:0!important}}
+
+
+/* Login refinado: el ojo permanece dentro del campo, sin heredar el botón general. */
+.login-panel .login-card .password-control{position:relative;display:block}
+.login-panel .login-card .password-control input{display:block;width:100%;padding-right:60px}
+.login-panel .login-card button.password-toggle{position:absolute;inset:auto 10px auto auto;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:40px;min-width:40px;height:38px;margin:0;padding:7px;line-height:1;border:0;border-radius:10px;background:transparent;color:#54716c;box-shadow:none;cursor:pointer;z-index:2}
+.login-panel .login-card button.password-toggle:hover:not(:disabled){transform:translateY(-50%);background:#edf3ef;color:#1c4c4e;box-shadow:none}
+.login-panel .login-card button.password-toggle:focus-visible{outline:2px solid #b88e57;outline-offset:1px}
+.login-panel .login-card button.password-toggle svg{display:block;width:21px;height:21px}
+.mascot-cover-eyes{opacity:0;transition:opacity .28s ease}
+.stage-private .mascot-cover-eyes{opacity:1}
+.stage-private .mascot-arm-left,.stage-private .mascot-arm-right{opacity:0}
+.stage-private .mascot-eyes{opacity:0}
+.mascot-eyes{transform-box:fill-box;transform-origin:center;animation:mascot-blink 5.3s infinite}
+.stage-attentive .mascot-body{transform:rotate(-3deg);transform-origin:55px 105px;transition:transform .3s}
+@keyframes mascot-blink{0%,44%,47%,100%{transform:scaleY(1)}45.5%{transform:scaleY(.12)}}
+@media (prefers-reduced-motion:reduce){.mascot-cover-eyes{transition:none}}
