@@ -2,18 +2,18 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { ApiError } from '../models';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="login-page login-experience" [class.login-dark]="darkMode">
       <section class="login-stage" [class.stage-private]="campoActivo === 'password'" [class.stage-attentive]="campoActivo === 'user'" aria-label="Bienvenida a Maranatha Store">
         <div class="login-stage-pattern" aria-hidden="true"></div>
-        <div class="stage-top"><span class="stage-symbol">M<span>✦</span></span><span>MARANATHA / STORE</span></div>
+        <div class="stage-top"><img class="maranatha-brand-image stage-brand-image" src="/maranatha-logo.png" alt="Librería Maranatha" (error)="onLogoError($event)"><span class="brand-fallback">MARANATHA / STORE</span></div>
         <div class="stage-copy">
           <span class="stage-kicker"><span class="live-dot"></span> TU ESPACIO DE TRABAJO</span>
           <h1>Todo en orden.<br><em>Todo en movimiento.</em></h1>
@@ -92,7 +92,7 @@ import { ApiError } from '../models';
 
       <section class="login-panel">
         <div class="login-panel-top">
-          <div class="login-panel-brand"><span class="login-panel-mark">M.</span><span>MARANATHA STORE</span></div>
+          <div class="login-panel-brand"><img class="maranatha-brand-image panel-brand-image" src="/maranatha-logo.png" alt="Librería Maranatha" (error)="onLogoError($event)"><span class="brand-fallback">MARANATHA STORE</span></div>
           <button type="button" class="login-theme-toggle" (click)="toggleTheme()"
             [attr.aria-pressed]="darkMode"
             [attr.aria-label]="darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
@@ -130,6 +130,7 @@ import { ApiError } from '../models';
           <button type="submit" class="login-submit" [disabled]="cargando || loginForm.invalid">
             <span>{{ cargando ? 'Verificando acceso...' : 'Entrar al panel' }}</span><span aria-hidden="true">↗</span>
           </button>
+          <a class="forgot-password-link" routerLink="/recuperar-contrasena">¿Olvidaste tu contraseña? <span aria-hidden="true">↗</span></a>
           <div class="login-secure"><span aria-hidden="true">◈</span> Acceso protegido · Maranatha Store V2</div>
         </form>
         <div class="login-panel-bottom">GESTIÓN COMERCIAL · INVENTARIO · VENTAS</div>
@@ -150,6 +151,10 @@ export class LoginComponent {
     this.darkMode = !this.darkMode;
     localStorage.setItem('maranatha-ui-mode', this.darkMode ? 'dark' : 'light');
   }
+  onLogoError(event: Event): void {
+    (event.target as HTMLImageElement).style.display = 'none';
+  }
+
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
