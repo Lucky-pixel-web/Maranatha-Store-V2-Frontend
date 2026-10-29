@@ -350,7 +350,15 @@ export class ProductosComponent implements OnInit {
 
     for (const fila of filas) {
       const productoImportado = this.productoDesdeFila(fila);
-      if (!productoImportado) {
+      if (!productoImportado
+          || !productoImportado.nombre.trim()
+          || !productoImportado.descripcion?.trim()
+          || productoImportado.precio == null
+          || !Number.isFinite(Number(productoImportado.precio))
+          || Number(productoImportado.precio) <= 0
+          || productoImportado.stock == null
+          || !Number.isInteger(Number(productoImportado.stock))
+          || Number(productoImportado.stock) < 0) {
         resumen.omitidos++;
         continue;
       }
@@ -385,7 +393,7 @@ export class ProductosComponent implements OnInit {
     }
 
     await Promise.all(resultados);
-    this.mostrarMensaje(`Importación completada: ${resumen.nuevos} nuevos, ${resumen.actualizados} actualizados${resumen.errores ? `, ${resumen.errores} con error` : ''}.`);
+    this.mostrarMensaje(`Importación completada: ${resumen.nuevos} nuevos, ${resumen.actualizados} actualizados, ${resumen.omitidos} omitidos, ${resumen.errores} con error.`);
     this.cargar();
   }
 
