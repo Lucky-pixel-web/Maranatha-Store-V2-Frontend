@@ -292,3 +292,45 @@ tbody tr:hover{background:#f8faf5}
 @keyframes product-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}65%{transform:translateX(4px)}}
 @media(max-width:600px){.product-modal{padding:12px}.product-dialog{max-height:calc(100dvh - 24px)}.product-dialog-head,.product-dialog-fields{padding-left:20px;padding-right:20px}.product-dialog-actions{padding:15px 20px}.product-dialog .row{grid-template-columns:1fr;gap:0}}
 @media(prefers-reduced-motion:reduce){.product-modal,.product-dialog,.product-form-error,.field-invalid{animation:none!important}}
+
+
+/* Sprint 1: búsqueda, filtros, ajustes de stock y confirmaciones */
+.stock-filter{width:auto;min-width:180px;min-height:43px}
+.inventory-notice{animation:inventory-flash .35s ease;display:inline-flex;align-items:center;min-height:40px;margin-bottom:10px;padding:9px 16px;background:#e8f5e8;color:#1c6846;border-radius:11px;border:1px solid #c7e6cf}
+.inventory-notice.error-notice{background:#fff0ec;color:#a9332e;border-color:#f0c5bb}
+.search-result-feedback{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:13px 18px;margin:0 0 13px;border:1px solid #dbe6df;background:#eff7f0;color:#285a4b;border-radius:13px;animation:search-feedback-in .3s ease both}
+.search-result-feedback>span{font-size:19px;color:#c39555}
+.inventory-dialog{max-width:min(520px,94vw);padding:28px!important;max-height:calc(100dvh - 48px);overflow:auto;animation:product-dialog-in .32s cubic-bezier(.22,.75,.28,1) both}
+.inventory-dialog h3{margin:12px 0;color:#173a3d;font-size:24px}
+.inventory-dialog p{color:#6a817a;font-size:13px;line-height:1.65}
+.inventory-dialog label{display:grid;gap:6px;margin:15px 0;color:#385d58;font-weight:650}
+.inventory-dialog input,.inventory-dialog select{min-height:42px}
+.inventory-dialog .actions{flex-wrap:wrap}
+.inventory-preview{background:#e5f1e9;color:#244f43;border-radius:12px;padding:13px 16px;display:flex;justify-content:space-between}
+.inventory-hint{font-size:11px!important}
+.inventory-details{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.inventory-details div{padding:12px;border-radius:12px;background:#f0f5f1}
+.inventory-details dt{font-size:11px;color:#738a83}
+.inventory-details dd{margin:5px 0 0;color:#1c4844;font-size:17px;font-weight:800}
+.danger-button{background:#a63c36;color:white}
+.danger-button:hover:not(:disabled){background:#842b26}
+.maranatha-app.is-dark .inventory-dialog{background:#17373a;color:#e7eee9}
+.maranatha-app.is-dark .inventory-dialog h3{color:#f1f8ef}
+.maranatha-app.is-dark .inventory-dialog p,.maranatha-app.is-dark .inventory-dialog label{color:#c3d7cf}
+.maranatha-app.is-dark .inventory-details div,.maranatha-app.is-dark .inventory-preview{background:#214950;color:#e1efe7}
+.maranatha-app.is-dark .inventory-details dd{color:#f2e2bf}
+.maranatha-app.is-dark .search-result-feedback{background:#1b3c3f;border-color:#416863;color:#dcf2e1}
+.maranatha-app.is-dark .inventory-notice{background:#224e41;color:#dcf3db;border-color:#416a57}
+.maranatha-app.is-dark .inventory-notice.error-notice{background:#5c3030;color:#ffdbca;border-color:#9b5653}
+.sale-help-banner{display:flex;align-items:flex-start;gap:12px;margin:13px 0;padding:15px;border-radius:13px;background:#e8f3eb;border:1px solid #cfe7d5;color:#28584e;animation:maranatha-stage-enter .55s ease both}
+.sale-help-banner>span{font-size:25px;color:#d6a15d}
+.sale-help-banner b{display:block;font-size:13px}
+.sale-help-banner p{margin:5px 0 0;font-size:12px;line-height:1.5}
+.sale-count{font-size:12px;font-weight:750;letter-spacing:.2px;color:#457b6d;animation:search-feedback-in .3s both}
+.animated-sale-total strong{transition:transform .25s,color .25s;color:#246760}
+.maranatha-app.is-dark .sale-help-banner{background:#234b43;color:#e1f1e8;border-color:#4b7d65}
+.maranatha-app.is-dark .animated-sale-total strong{color:#f0c68c}
+@keyframes search-feedback-in{from{opacity:0;transform:translateY(9px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes inventory-flash{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:650px){.stock-filter{width:100%}.inventory-details{grid-template-columns:1fr 1fr}.inventory-dialog{padding:19px!important}.search-result-feedback{padding:12px}}
+@media(prefers-reduced-motion:reduce){.search-result-feedback,.inventory-notice,.inventory-dialog,.sale-help-banner,.sale-count{animation:none!important}}
