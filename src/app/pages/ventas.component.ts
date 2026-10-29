@@ -62,6 +62,7 @@ import { ApiError, Cliente, DetalleVenta, Producto, TipoComprobante, Venta } fro
         <small class="error" *ngIf="documentoError">{{ documentoError }}</small>
         <small class="warning" *ngIf="tipo==='FACTURA'">La factura exige un cliente con RUC válido de 11 dígitos.</small>
 
+        <div class="sale-help-banner no-print"><span aria-hidden="true">✦</span><div><b>Arma tu venta paso a paso</b><p>Busca el primer artículo, elige una cantidad y pulsa Agregar al carrito. Repite con otro producto; el total se actualizará solo.</p></div></div>
         <div class="row product-row product-search-row">
           <label>Producto
             <input type="text" [(ngModel)]="productoFiltro" (ngModelChange)="onProductoFiltroChange()" placeholder="Ingrese las primeras letras del producto" autocomplete="off">
@@ -93,7 +94,8 @@ import { ApiError, Cliente, DetalleVenta, Producto, TipoComprobante, Venta } fro
             </tbody>
           </table>
         </div>
-        <div class="total"><span>Total</span><strong>S/ {{ totalBorrador | number:'1.2-2' }}</strong></div>
+        <div class="sale-count no-print" *ngIf="detalles.length" aria-live="polite">{{ detalles.length }} artículo(s) diferente(s) · {{ unidadesCarrito }} unidad(es) en el carrito</div>
+        <div class="total animated-sale-total"><span>Total calculado automáticamente</span><strong>S/ {{ totalBorrador | number:'1.2-2' }}</strong></div>
         <button class="primary-wide" [disabled]="!detalles.length || procesando" (click)="registrar()">
           {{ procesando ? 'Registrando...' : 'Registrar e imprimir' }}
         </button>
@@ -231,6 +233,10 @@ export class VentasComponent implements OnInit {
   usarSiempreImpresion = false;
   igvRate = 0.18; // 18% IGV
   preciosIncluyenIgv = true;
+
+  get unidadesCarrito(): number {
+    return this.detalles.reduce((cantidad, detalle) => cantidad + detalle.cantidad, 0);
+  }
 
   get totalBorrador(): number {
     return this.detalles.reduce((suma, detalle) => suma + (detalle.subtotal || 0), 0);
