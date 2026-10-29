@@ -24,6 +24,10 @@ export class ApiService {
     return this.http.delete<void>(`${this.base}/productos/${id}`);
   }
 
+  ajustarStock(id: number, tipo: 'reponer' | 'descontar', cantidad: number): Observable<Producto> {
+    return this.http.post<Producto>(`${this.base}/productos/${id}/stock/${tipo}`, { cantidad });
+  }
+
   clientes(): Observable<Cliente[]> {
     return this.http.get<Cliente[]>(`${this.base}/clientes`);
   }
