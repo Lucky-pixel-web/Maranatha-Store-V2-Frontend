@@ -10,7 +10,7 @@ import { ApiError } from '../models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="login-page login-experience">
+    <div class="login-page login-experience" [class.login-dark]="darkMode">
       <section class="login-stage" [class.stage-private]="campoActivo === 'password'" [class.stage-attentive]="campoActivo === 'user'" aria-label="Bienvenida a Maranatha Store">
         <div class="login-stage-pattern" aria-hidden="true"></div>
         <div class="stage-top"><span class="stage-symbol">M<span>✦</span></span><span>MARANATHA / STORE</span></div>
@@ -91,7 +91,16 @@ import { ApiError } from '../models';
       </div>
 
       <section class="login-panel">
-        <div class="login-panel-top"><span class="login-panel-mark">M.</span><span>MARANATHA STORE</span></div>
+        <div class="login-panel-top">
+          <div class="login-panel-brand"><span class="login-panel-mark">M.</span><span>MARANATHA STORE</span></div>
+          <button type="button" class="login-theme-toggle" (click)="toggleTheme()"
+            [attr.aria-pressed]="darkMode"
+            [attr.aria-label]="darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+            [attr.title]="darkMode ? 'Tema claro' : 'Tema oscuro'">
+            <span class="login-theme-symbol" aria-hidden="true">{{ darkMode ? '☀' : '☾' }}</span>
+            <span>{{ darkMode ? 'Claro' : 'Oscuro' }}</span>
+          </button>
+        </div>
         <form class="login-card" (ngSubmit)="entrar()" #loginForm="ngForm">
           <div class="login-eyebrow">BIENVENIDO DE NUEVO</div>
           <h2>Tu espacio comienza aquí.</h2>
@@ -135,6 +144,12 @@ export class LoginComponent {
   cargando = false;
   mostrarClave = false;
   campoActivo: 'idle' | 'user' | 'password' = 'idle';
+  darkMode = localStorage.getItem('maranatha-ui-mode') === 'dark';
+
+  toggleTheme(): void {
+    this.darkMode = !this.darkMode;
+    localStorage.setItem('maranatha-ui-mode', this.darkMode ? 'dark' : 'light');
+  }
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
