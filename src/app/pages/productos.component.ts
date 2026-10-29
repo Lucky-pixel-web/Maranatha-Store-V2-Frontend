@@ -38,8 +38,8 @@ import { ApiError, Producto } from '../models';
       </table>
     </div>
 
-    <div class="modal product-modal" *ngIf="abierto" (click)="cerrarModal()" role="presentation">
-      <form class="dialog product-dialog" (ngSubmit)="guardar()" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="titulo-producto" novalidate>
+    <div class="modal product-modal" *ngIf="abierto" role="presentation">
+      <form class="dialog product-dialog" (ngSubmit)="guardar()" role="dialog" aria-modal="true" aria-labelledby="titulo-producto" novalidate>
         <div class="product-dialog-head">
           <div>
             <span class="product-dialog-eyebrow">MARANATHA · CATÁLOGO</span>
@@ -52,8 +52,8 @@ import { ApiError, Producto } from '../models';
           <label>Nombre del artículo <span class="required-star">*</span>
             <input [(ngModel)]="form.nombre" name="nombre" required maxlength="150" placeholder="Ej. Cuaderno cuadriculado A4" [class.field-invalid]="errorFormulario && !form.nombre.trim()" (input)="limpiarError()" autofocus>
           </label>
-          <label>Descripción
-            <input [(ngModel)]="form.descripcion" name="descripcion" maxlength="500" placeholder="Características del artículo" (input)="limpiarError()">
+          <label>Descripción <span class="required-star">*</span>
+            <input [(ngModel)]="form.descripcion" name="descripcion" required maxlength="500" placeholder="Características del artículo" [class.field-invalid]="errorFormulario && !form.descripcion?.trim()" (input)="limpiarError()">
           </label>
           <div class="row">
             <label>Precio (S/) <span class="required-star">*</span>
@@ -129,6 +129,10 @@ export class ProductosComponent implements OnInit {
       this.errorFormulario = 'Ingrese el nombre del producto.';
       return;
     }
+    if (!this.form.descripcion?.trim()) {
+      this.errorFormulario = 'Ingrese la descripción del producto.';
+      return;
+    }
     if (this.form.precio == null || !Number.isFinite(Number(this.form.precio)) || Number(this.form.precio) <= 0) {
       this.errorFormulario = 'El precio debe ser mayor que cero.';
       return;
@@ -138,6 +142,8 @@ export class ProductosComponent implements OnInit {
       return;
     }
 
+    this.form.nombre = this.form.nombre.trim();
+    this.form.descripcion = this.form.descripcion.trim();
     this.procesando = true;
     const operacion = this.form.id
       ? this.api.actualizarProducto(this.form)
