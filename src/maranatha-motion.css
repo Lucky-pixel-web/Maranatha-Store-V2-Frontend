@@ -334,3 +334,34 @@ tbody tr:hover{background:#f8faf5}
 @keyframes inventory-flash{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:650px){.stock-filter{width:100%}.inventory-details{grid-template-columns:1fr 1fr}.inventory-dialog{padding:19px!important}.search-result-feedback{padding:12px}}
 @media(prefers-reduced-motion:reduce){.search-result-feedback,.inventory-notice,.inventory-dialog,.sale-help-banner,.sale-count{animation:none!important}}
+
+
+/* Papelera animada: solo después de que el servidor confirma eliminar/anular */
+.trash-eat-button{display:inline-flex;align-items:center;gap:6px;min-width:75px;white-space:nowrap;position:relative;overflow:visible;vertical-align:middle;transition:opacity .2s}
+.trash-eat-button .trash-bin{position:relative;display:inline-block;width:16px;height:18px;flex:none}
+.trash-bin-lid{position:absolute;top:2px;left:1px;width:14px;height:3px;background:currentColor;border-radius:3px;transform-origin:0 50%}
+.trash-bin-lid:before{content:'';position:absolute;top:-3px;left:5px;width:5px;height:3px;border:1.5px solid currentColor;border-bottom:0;border-radius:3px 3px 0 0}
+.trash-bin-body{position:absolute;top:6px;left:3px;width:11px;height:11px;border:1.8px solid currentColor;border-radius:0 0 3px 3px;transform-origin:center bottom}
+.trash-word{display:inline-flex;gap:.1px;font-size:inherit;letter-spacing:.05px}
+.trash-word>span{display:inline-block}
+.trash-eat-button.trash-eating .trash-bin-lid{animation:trash-lid-open .45s ease-in-out both}
+.trash-eat-button.trash-eating .trash-bin-body{animation:trash-bin-bounce .65s ease-in-out both}
+.trash-eat-button.trash-eating .trash-word>span{animation:trash-letter-fall .5s cubic-bezier(.38,.7,.58,1) both}
+.trash-eat-button.trash-eating .trash-word>span:nth-child(1){animation-delay:.03s}
+.trash-eat-button.trash-eating .trash-word>span:nth-child(2){animation-delay:.08s}
+.trash-eat-button.trash-eating .trash-word>span:nth-child(3){animation-delay:.13s}
+.trash-eat-button.trash-eating .trash-word>span:nth-child(4){animation-delay:.18s}
+.trash-eat-button.trash-eating .trash-word>span:nth-child(5){animation-delay:.23s}
+.trash-eat-button.trash-eating .trash-word>span:nth-child(6){animation-delay:.28s}
+.trash-eat-button.trash-eating .trash-word>span:nth-child(7){animation-delay:.33s}
+.trash-eat-button.trash-eating .trash-word>span:nth-child(8){animation-delay:.38s}
+.inventory-row-removing{animation:inventory-row-away .7s ease-in-out both;pointer-events:none}
+.sale-row-annulled{animation:sale-row-mark .7s ease both}
+.sale-detail-dialog{width:min(640px,95vw);max-width:95vw}
+.sale-detail-dialog .table-wrap{max-height:45vh;overflow:auto}
+@keyframes trash-lid-open{0%,100%{transform:rotate(0)}35%,78%{transform:rotate(-32deg)}}
+@keyframes trash-bin-bounce{0%,100%{transform:scale(1)}38%{transform:scale(1.15,.88)}72%{transform:scale(.96,1.06)}}
+@keyframes trash-letter-fall{0%{transform:translate(0,0) rotate(0);opacity:1}60%{opacity:1}100%{transform:translate(-17px,10px) scale(.25) rotate(-35deg);opacity:0}}
+@keyframes inventory-row-away{0%{opacity:1;transform:translateX(0)}75%{opacity:.4;transform:translateX(-18px)}100%{opacity:0;transform:translateX(-30px)}}
+@keyframes sale-row-mark{0%{background:transparent}35%{background:#b89b4940}100%{background:transparent}}
+@media(prefers-reduced-motion:reduce){.trash-eat-button.trash-eating *,.inventory-row-removing,.sale-row-annulled{animation:none!important}}
