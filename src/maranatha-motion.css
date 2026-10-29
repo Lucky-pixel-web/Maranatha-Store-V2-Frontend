@@ -227,3 +227,68 @@ tbody tr:hover{background:#f8faf5}
 @media(max-width:500px){.hero-art{display:none}.section-hero{min-height:145px}.section-hero h2{font-size:23px}}
 @media(prefers-reduced-motion:reduce){.maranatha-app,.hero-text,.hero-art,.hero-art svg,.route-stage *,.route-wipe{animation:none!important;transition:none!important}}
 @media print{.section-hero,.route-wipe,.theme-toggle{display:none!important}.maranatha-app.is-dark{background:#fff!important;color:#000!important}.maranatha-app.is-dark .panel{background:#fff!important;color:#000!important;box-shadow:none!important}}
+
+
+/* Login — tema claro/oscuro y continuidad visual con el panel de gestión */
+.login-experience{transition:background-color .5s,color .5s}
+.login-panel{transition:background-color .5s,color .5s}
+.login-panel-top{justify-content:space-between;gap:18px}
+.login-panel-brand{display:flex;align-items:center;gap:11px}
+.login-theme-toggle{display:inline-flex;align-items:center;gap:7px;justify-content:center;background:#eff3ef;color:#22524c;border:1px solid #dbe8de;border-radius:11px;font-size:12px;min-width:86px;padding:9px 12px}
+.login-theme-toggle:hover:not(:disabled){background:#265754;color:white}
+.login-theme-symbol{font-size:19px;line-height:1}
+.login-dark{background:#10282c!important;color:#ebf2ed}
+.login-dark .login-panel{background:#10282c;color:#e8f0e9}
+.login-dark .login-panel-top{color:#e7f0e7}
+.login-dark .login-card h2{color:#eaf2e9}
+.login-dark .login-card p{color:#b1c4bb}
+.login-dark .login-card label{color:#d0dfd5}
+.login-dark .login-control input{background:#1a3c40;border-color:#426565;color:#fff}
+.login-dark .login-control input::placeholder{color:#a6bdb5}
+.login-dark .login-control input:focus{border-color:#e5bd7a}
+.login-dark .login-theme-toggle{background:#23474b;color:#e6c18b;border-color:#446e68}
+.login-dark .login-secure,.login-dark .login-panel-bottom{color:#9bb4ac}
+.login-dark .password-toggle{color:#b9d1c4!important}
+.login-dark .password-toggle:hover{background:#2c5254!important}
+.login-dark .login-panel .login-submit{background:#d9a664;color:#17363a}
+.login-dark .login-panel .login-submit:hover{background:#ebba80}
+@media(max-width:550px){.login-panel-brand{gap:6px}.login-panel-top{gap:8px}.login-theme-toggle{min-width:42px;padding:8px}.login-theme-toggle>span:last-child{display:none}}
+
+/* Dialog de producto: centrar respecto a la ventana y no al scroll de la tabla.
+   .content tenía un transform con animation-fill-mode:both: crea un bloque contenedor
+   para position:fixed y provoca el desplazamiento reportado. */
+.maranatha-app:has(.product-modal) .content,
+.maranatha-app:has(.product-modal) .maranatha-content{animation:none!important;transform:none!important}
+.maranatha-app:has(.product-modal) .route-stage{transform:none!important}
+.product-modal{position:fixed!important;inset:0!important;width:100vw;height:100dvh;overflow-y:auto;overscroll-behavior:contain;display:flex!important;justify-content:center;align-items:center;padding:24px;z-index:1000;background:#0b3035a9;backdrop-filter:blur(7px);animation:product-backdrop .25s ease both}
+.product-dialog{width:min(540px,100%);max-height:calc(100dvh - 48px);overflow-y:auto;overscroll-behavior:contain;padding:0!important;margin:auto;border-radius:22px!important;background:#fff;box-shadow:0 28px 80px #06232a55;animation:product-dialog-in .42s cubic-bezier(.2,.85,.25,1) both}
+.product-dialog-head{padding:27px 28px 22px;display:flex;gap:12px;align-items:flex-start;justify-content:space-between;background:linear-gradient(110deg,#f6f7f2,#fff)}
+.product-dialog-eyebrow{color:#b78c57;font-size:10px;letter-spacing:2px;font-weight:800}
+.product-dialog h3{font-size:24px;color:#163d40;margin:10px 0 8px;letter-spacing:-.7px}
+.product-dialog-head p{font-size:12px;line-height:1.6;color:#71837b;margin:0}
+.product-dialog-close{flex:none;min-width:36px;width:36px;height:36px;background:#e9eeea;color:#30544f;border:0;border-radius:10px;font-size:25px;line-height:1;padding:0}
+.product-dialog-fields{padding:23px 28px 7px}
+.product-dialog-fields label{display:block;color:#325452;font-weight:650;font-size:12px;margin:0 0 17px}
+.product-dialog-fields label input{display:block;width:100%;height:44px;margin-top:9px;border:1px solid #dce5df;background:#fff;border-radius:10px;font-size:13px;transition:box-shadow .22s,background .22s,border-color .22s,transform .22s}
+.product-dialog-fields label input:focus{border-color:#35766d;box-shadow:0 0 0 4px #42877d19;transform:translateY(-1px)}
+.product-dialog .row{grid-template-columns:1fr 1fr;gap:16px}
+.required-star{color:#b95f3f}
+.product-field-hint{font-size:11px;line-height:1.55;color:#82928b;margin:0 0 10px}
+.product-form-error{display:flex;align-items:center;gap:10px;color:#ab352e;background:#fff0eb;border:1px solid #f4cec2;border-radius:12px;padding:12px 14px;margin:9px 0 15px;font-size:12px;animation:product-error-in .35s ease both}
+.product-form-error span{display:grid;place-items:center;background:#b23e35;color:#fff;font-weight:800;border-radius:50%;width:20px;height:20px;flex:none}
+.product-dialog-fields .field-invalid{border-color:#d25843!important;background:#fff7f4!important;animation:product-shake .3s ease}
+.product-dialog-actions{padding:17px 28px 24px;border-top:1px solid #e7eee9;margin-top:4px;display:flex;gap:9px;justify-content:flex-end}
+.product-dialog-actions button{border-radius:10px;padding:11px 17px}
+.maranatha-app.is-dark .product-dialog{background:#16343a;border:1px solid #33595d}
+.maranatha-app.is-dark .product-dialog-head{background:linear-gradient(110deg,#183a3e,#244449)}
+.maranatha-app.is-dark .product-dialog h3,.maranatha-app.is-dark .product-dialog-fields label{color:#eaf2ea}
+.maranatha-app.is-dark .product-dialog-head p,.maranatha-app.is-dark .product-field-hint{color:#b0c5bd}
+.maranatha-app.is-dark .product-dialog-fields label input{background:#23494e;border:1px solid #4e7472;color:#fff}
+.maranatha-app.is-dark .product-dialog-actions{border-color:#335a5d}
+.maranatha-app.is-dark .product-dialog-close{background:#315359;color:#e9f1eb}
+@keyframes product-backdrop{from{opacity:0}to{opacity:1}}
+@keyframes product-dialog-in{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes product-error-in{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes product-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}65%{transform:translateX(4px)}}
+@media(max-width:600px){.product-modal{padding:12px}.product-dialog{max-height:calc(100dvh - 24px)}.product-dialog-head,.product-dialog-fields{padding-left:20px;padding-right:20px}.product-dialog-actions{padding:15px 20px}.product-dialog .row{grid-template-columns:1fr;gap:0}}
+@media(prefers-reduced-motion:reduce){.product-modal,.product-dialog,.product-form-error,.field-invalid{animation:none!important}}
