@@ -11,16 +11,17 @@ import { AuthService } from './core/auth.service';
       <aside>
         <div class="brand"><span class="logo">M</span><div><b>Maranatha</b><small>Store</small></div></div>
         <nav>
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">🏠 Inicio</a>
-          <a routerLink="/productos" routerLinkActive="active">📦 Productos y stock</a>
-          <a routerLink="/clientes" routerLinkActive="active">👥 Clientes</a>
-          <a routerLink="/ventas" routerLinkActive="active">🛒 Ventas y facturación</a>
-          <a routerLink="/reportes" routerLinkActive="active">📊 Reportes Excel</a>
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}"><span class="nav-icon">⌂</span><span class="nav-label">Inicio</span></a>
+          <a routerLink="/productos" routerLinkActive="active"><span class="nav-icon">▤</span><span class="nav-label">Productos y stock</span></a>
+          <a routerLink="/clientes" routerLinkActive="active"><span class="nav-icon">♙</span><span class="nav-label">Clientes</span></a>
+          <a routerLink="/ventas" routerLinkActive="active"><span class="nav-icon">◇</span><span class="nav-label">Ventas y facturación</span></a>
+          <a routerLink="/reportes" routerLinkActive="active"><span class="nav-icon">▥</span><span class="nav-label">Reportes Excel</span></a>
         </nav>
+        <div class="sidebar-bottom"><span>MARANATHA STORE / V2</span>Gestión de tu librería, en un solo lugar.</div>
       </aside>
       <main>
         <header>
-          <div><h1>Sistema de ventas</h1><p>Librería escolar</p></div>
+          <div><h1>Panel de gestión</h1><p>Inventario, clientes y ventas</p></div>
           <div class="user-menu" #userMenu>
             <button type="button" class="user-menu-toggle" (click)="toggleMenu()">
               {{ auth.username }} <span class="chevron">▾</span>
